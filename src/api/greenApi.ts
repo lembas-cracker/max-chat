@@ -29,6 +29,7 @@ export interface NotificationBody {
     chatId: string;
     sender: string;
     senderName?: string;
+    senderPhoneNumber?: string | number;
     chatName?: string;
   };
   messageData?: {
@@ -96,11 +97,15 @@ export async function* pollNotifications(
   while (!signal.aborted) {
     const throttle = sleep(5000);
     const notification = await receiveNotification(credentials, signal);
-    if (notification) {
-      yield notification;
-    }
 
-    await throttle;
+    if (notification) {
+      // TODO: Abort timeout to prevent them from accumulating when getting a lot of notifications.
+      yield notification;
+    } else {
+      // Sometimes the endpoint responds immediately without waiting 5 seconds.
+      // We can wait client-side as a safety measure against spamming requests.
+      await throttle;
+    }
   }
 }
 
